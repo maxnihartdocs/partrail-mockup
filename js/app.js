@@ -1,10 +1,11 @@
-/* PartRail prototype app — hash router, fake data, localStorage cart/garage/orders */
+/* Storefront prototype app — hash router, fake data, localStorage cart/garage/orders */
 (function () {
   'use strict';
   const D = window.DATA;
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const app = $('#app');
+  const H = window.PRX = window.PRX || { routes: {} };
   const money = n => (n < -0.004 ? '−' : '') + '$' + (Math.round(Math.abs(n) * 100) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -27,10 +28,13 @@
     $('#cartCount').textContent = n;
     $('#cartCount').classList.toggle('on', n > 0);
   }
-  function toast(msg) {
-    const t = $('#toast'); t.innerHTML = msg; t.hidden = false;
-    clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 2200);
+  function toast(msg, kind) {
+    const t = $('#toast'); t.className = 'toast ' + (kind || 'ok');
+    t.innerHTML = `<span class="t-ico">${kind === 'err' ? '!' : kind === 'info' ? 'i' : '✓'}</span><span>${msg}</span>`; t.hidden = false;
+    t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
+    clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 2600);
   }
+  const FIT_BADGE = '<span class="fitg" title="If it doesn\'t fit the vehicle in your garage, we pay return shipping. No restocking fee.">🛡 Fits-or-we-pay-the-return</span>';
 
   // ---------- pricing / shipping model (fake) ----------
   const SHIP_METHODS = [
@@ -74,9 +78,10 @@
   function renderVehBar() {
     const v = D.findVehicle(currentVid());
     const bar = $('#vehBar');
-    if (!v) { bar.innerHTML = ''; bar.hidden = true; return; }
+    if (!v) { bar.innerHTML = `<div class="wrap vehbar-in"><span class="vb-l">No vehicle selected</span><button class="vb-c vb-lk" id="vbLookup">Add by VIN / plate / Y-M-M →</button></div>`; bar.hidden = false; $('#vbLookup').onclick = () => H.openLookup && H.openLookup(); return; }
     bar.hidden = false;
-    bar.innerHTML = `<div class="wrap vehbar-in"><span class="vb-l">Shopping for</span><a class="vb-v" href="#/v/${v.id}"><b>${esc(D.vehicleLabel(v))}</b> <span>${esc(v.engine)}</span></a><a class="vb-c" href="#/garage">Change</a></div>`;
+    bar.innerHTML = `<div class="wrap vehbar-in"><span class="vb-l">Shopping for</span><a class="vb-v" href="#/v/${v.id}"><b>${esc(D.vehicleLabel(v))}</b> <span>${esc(v.engine)}</span></a><button class="vb-lk" id="vbLookup">VIN / Plate</button><a class="vb-c" href="#/garage">Change</a></div>`;
+    $('#vbLookup').onclick = () => H.openLookup && H.openLookup();
   }
 
   // vehicle selector (Year → Make → Model → Engine)
@@ -122,21 +127,25 @@
     app.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
+        <span class="hero-kicker">Trusted by 1.2M+ truck owners & 9,800 shops</span>
         <h1>Every part. Every brand.<br><em>Good · Better · Best.</em></h1>
         <p>Pick your truck, pick your tier. Warehouse-direct prices on 400,000+ parts from dozens of brands — no membership, no markup games.</p>
+        <div class="hero-stats"><span><b>4.8</b>${stars(4.8)}<small>21,486 reviews</small></span><span><b>98.7%</b><small>fitment accuracy</small></span><span><b>6</b><small>US warehouses</small></span></div>
+        <div class="hero-ctas"><a class="btn btn-primary" href="#/jobs">✨ Build my job</a><a class="btn btn-ghost-l" href="#/pro">For Shops & Fleets</a></div>
       </div>
       <div class="hero-card">
         <h2>Find parts for your vehicle</h2>
-        ${selectorHtml('home')}
+        ${H.lookupHtml ? H.lookupHtml('home') : selectorHtml('home')}
         <div class="or"><span>or search by part / OE number</span></div>
         <form class="pn-search" id="pnForm"><input type="search" id="pnInput" placeholder="e.g. ${esc(samplePn)}"><button class="btn">Find</button></form>
       </div>
     </section>
 
-    <section class="promise">
+    <section class="promise promise4">
       <div><b>📦 Ships from the warehouse closest to you</b><span>6 distribution centers · most orders leave same day</span></div>
       <div><b>💲 Wholesale-direct pricing</b><span>Closeouts & wholesaler closeouts every day</span></div>
-      <div><b>↩︎ Easy returns & core refunds</b><span>Prepaid core return labels on reman parts</span></div>
+      <div><b>🛡 Fits-or-we-pay-the-return</b><span>Shop by garage vehicle and fitment is on us</span></div>
+      <div><b>↩︎ Easy returns & core refunds</b><span>Prepaid core labels · 60-day returns</span></div>
     </section>
 
     <section class="block">
@@ -160,7 +169,8 @@
       <div class="block-h"><h2>How Good · Better · Best works</h2></div>
       <div class="tx-grid">${['good', 'better', 'best'].map(t => { const T = D.TIERS[t]; return `<div class="tx t-${t}"><div class="tx-rank">${T.rank}</div><h3>${T.label}</h3><p>${T.tag}</p><ul><li><b>Warranty:</b> ${T.warranty}</li><li><b>Best for:</b> ${T.bestFor}</li></ul></div>`; }).join('')}</div>
     </section>`;
-    wireSelector($('#homeSel'), id => { location.hash = '#/v/' + id; });
+    if (H.wireLookup) H.wireLookup($('#homeLk'), id => { location.hash = '#/v/' + id; }); else wireSelector($('#homeSel'), id => { location.hash = '#/v/' + id; });
+    if (H.homeExtras) H.homeExtras();
     $('#pnForm').addEventListener('submit', e => { e.preventDefault(); location.hash = '#/search?q=' + encodeURIComponent($('#pnInput').value.trim()); });
     $$('.gchip[data-vid]').forEach(a => a.addEventListener('click', () => setVehicle(a.dataset.vid)));
   }
@@ -170,9 +180,9 @@
     <h1 class="page-h">My Garage</h1>
     <div class="garage-list">${garage.map(id => { const v = D.findVehicle(id); if (!v) return ''; return `<div class="gitem ${id === currentVid() ? 'on' : ''}">
       <div class="gi-ico">${icon('gear', 30)}</div><div class="gi-t"><b>${esc(D.vehicleLabel(v))}</b><span>${esc(v.engine)}</span></div>
-      <a class="btn btn-sm btn-primary" href="#/v/${id}" data-vid="${id}">Shop</a><button class="btn btn-sm btn-ghost" data-del="${id}" aria-label="Remove">✕</button></div>`; }).join('') || '<p class="muted">No vehicles yet.</p>'}</div>
-    <div class="panel"><h2>Add a vehicle</h2>${selectorHtml('gar')}</div>`;
-    wireSelector($('#garSel'), id => { location.hash = '#/v/' + id; });
+      <a class="btn btn-sm btn-primary" href="#/v/${id}" data-vid="${id}">Shop</a><button class="btn btn-sm btn-ghost" data-del="${id}" aria-label="Remove">✕</button></div>`; }).join('') || '<div class="empty"><div class="empty-ico">🚚</div><b>Your garage is empty</b><br><span class="small">Add a truck by VIN, plate or year/make/model below and every part we show you will fit.</span></div>'}</div>
+    <div class="panel"><h2>Add a vehicle</h2>${H.lookupHtml ? H.lookupHtml('gar') : selectorHtml('gar')}</div>`;
+    if (H.wireLookup) H.wireLookup($('#garLk'), id => { location.hash = '#/v/' + id; }); else wireSelector($('#garSel'), id => { location.hash = '#/v/' + id; });
     $$('[data-vid]').forEach(a => a.addEventListener('click', () => setVehicle(a.dataset.vid)));
     $$('[data-del]').forEach(b => b.addEventListener('click', () => {
       garage = garage.filter(x => x !== b.dataset.del); saveGarage();
@@ -237,7 +247,7 @@
     function rows() {
       let ps = all.filter(p => (state.tier === 'all' || p.tier === state.tier) && (!state.pos || p.pos === state.pos) && (!state.hideClose || !p.tags.length || p.tags.every(t => t === 'bestseller')));
       ps = ps.slice().sort(state.sort === 'price' ? (a, b) => a.price - b.price : state.sort === 'price-d' ? (a, b) => b.price - a.price : state.sort === 'rating' ? (a, b) => b.rating - a.rating : (a, b) => D.WAREHOUSES[a.wh].d - D.WAREHOUSES[b.wh].d || a.price - b.price);
-      if (!ps.length) return '<div class="empty">No parts match these filters.</div>';
+      if (!ps.length) return '<div class="empty"><div class="empty-ico">🔍</div><b>No parts match these filters</b><br><span class="small">Try showing closeouts or a different tier.</span></div>';
       return ps.map(p => { const W = D.WAREHOUSES[p.wh];
         return `<div class="prow t-${p.tier}">
           <label class="pr-cmp" title="Compare"><input type="checkbox" data-cmp="${p.i}" ${compare.includes(p.i) ? 'checked' : ''}><span>Compare</span></label>
@@ -247,6 +257,7 @@
             <a class="pr-name" href="#/p/${v.id}/${subId}/${p.i}"><b>${esc(p.brand)}</b> ${esc(p.partNo)}</a>
             <div class="pr-notes">${p.pos ? `<b>${esc(p.pos)}</b>; ` : ''}${p.notes.map(esc).join('; ')}</div>
             <div class="pr-rate">${stars(p.rating)} <span>${p.rating} (${p.reviews})</span> · <a href="#/p/${v.id}/${subId}/${p.i}">Info & fitment</a></div>
+            <div class="pr-fit">${FIT_BADGE}</div>
           </div>
           <div class="pr-ship"><span class="dot d${Math.min(W.d, 4)}"></span><div><b>${esc(W.city)}</b><span>Arrives in ${W.days} to 43506</span></div></div>
           <div class="pr-price"><b>${money(p.price)}</b>${p.core ? `<span class="core">+ ${money(p.core)} core</span>` : '<span class="core muted">no core</span>'}</div>
@@ -256,7 +267,7 @@
 
     function draw() {
       app.innerHTML = `${crumbs([['Home', '#/'], [D.vehicleLabel(v), '#/v/' + v.id], [f.cat.name, '#/v/' + v.id + '?open=' + f.cat.id], [f.sub.name, '']])}
-      <div class="list-head"><h1 class="page-h">${esc(f.sub.name)}</h1><div class="muted">${esc(D.vehicleLabel(v))} · ${esc(v.engine)} · <b>${all.length}</b> options from <b>${new Set(all.map(p => p.brand)).size}</b> brands</div></div>
+      <div class="list-head"><h1 class="page-h">${esc(f.sub.name)}</h1><div class="fit-banner"><span>✓ Showing only parts that fit your <b>${esc(D.vehicleLabel(v))}</b></span>${FIT_BADGE}</div><div class="muted">${esc(D.vehicleLabel(v))} · ${esc(v.engine)} · <b>${all.length}</b> options from <b>${new Set(all.map(p => p.brand)).size}</b> brands</div></div>
       ${positions.length > 1 ? `<div class="seg" id="posSeg">${positions.map(p => `<button class="${p === state.pos ? 'on' : ''}" data-pos="${esc(p)}">${esc(p)}</button>`).join('')}</div>` : ''}
       <div class="tiers" id="tiers">${['good', 'better', 'best'].map(tierCard).join('')}</div>
       <div class="tier-compare-link"><button class="linkbtn" id="tierTable">Compare tiers side-by-side ›</button></div>
@@ -373,12 +384,15 @@
         <h1>${esc(p.brand)} ${esc(p.partNo)}</h1>
         <div class="pd-sub">${esc(f.sub.name)}${p.pos ? ' · ' + esc(p.pos) : ''} · fits ${esc(D.vehicleLabel(v))} ${esc(v.engine)}</div>
         <div class="pr-rate">${stars(p.rating)} <span>${p.rating} · ${p.reviews} reviews</span></div>
-        <div class="fit-ok">✓ Fits your ${esc(D.vehicleLabel(v))}</div>
+        <div class="fit-row"><div class="fit-ok">✓ Fits your ${esc(D.vehicleLabel(v))}</div>${FIT_BADGE}</div>
+        <div class="pd-stock">● In stock · <b>${12 + (p.reviews % 40)}</b> sold in the last 30 days</div>
         <div class="pd-price"><b>${money(p.price)}</b>${p.core ? `<span>+ ${money(p.core)} refundable core charge</span>` : ''}</div>
         <div class="pd-ship"><span class="dot d${Math.min(W.d, 4)}"></span> Ships from <b>${esc(W.city)}</b> · arrives in ${W.days} to 43506</div>
         <div class="pd-warr">🛡 ${T.warranty} warranty · ${T.label} tier</div>
         <div class="pd-cta"><select id="pdQty" aria-label="Quantity">${[1, 2, 3, 4].map(n => `<option>${n}</option>`).join('')}</select><button class="btn btn-primary btn-lg" id="pdAdd">Add to cart</button></div>
         <ul class="pd-notes">${p.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+        <div class="pd-trust"><span>🔒 Secure checkout</span><span>↩︎ 60-day returns</span><span>🚚 Ships ${W.d <= 1 ? 'today' : 'in 24h'}</span></div>
+        <button class="linkbtn small" id="pdAsk">💬 Ask ${esc(D.STORE.name)}: will this fit my truck?</button>
       </div>
     </div>
 
@@ -395,12 +409,13 @@
         <p class="small muted">Also sold as / interchanges with:</p>
         <div class="tscroll"><table class="grid"><tbody>${xrefs.map(x => `<tr><td><a href="#/p/${v.id}/${subId}/${x.i}">${esc(x.brand)} ${esc(x.partNo)}</a></td><td>${tierPill(x.tier)}</td><td class="r">${money(x.price)}</td></tr>`).join('')}</tbody></table></div>
       </section>
-      <section class="panel"><h2>Warranty</h2><p><b>${T.warranty}</b> from date of purchase, covering defects in materials and workmanship. ${p.tier === 'best' ? 'Includes commercial / fleet use. ' : p.tier === 'good' ? 'Personal use only. ' : 'Personal and light commercial use. '}Warranty handled by PartRail — no shipping your claim to the manufacturer.</p>${p.core ? `<p>Core: return your old unit within 60 days using the prepaid label in the box for a ${money(p.core)} refund.</p>` : ''}</section>
+      <section class="panel"><h2>Warranty</h2><p><b>${T.warranty}</b> from date of purchase, covering defects in materials and workmanship. ${p.tier === 'best' ? 'Includes commercial / fleet use. ' : p.tier === 'good' ? 'Personal use only. ' : 'Personal and light commercial use. '}Warranty handled by ${esc(D.STORE.name)} — no shipping your claim to the manufacturer.</p>${p.core ? `<p>Core: return your old unit within 60 days using the prepaid label in the box for a ${money(p.core)} refund.</p>` : ''}</section>
       <section class="panel"><h2>Reviews <span class="muted small">${p.rating} avg · ${p.reviews}</span></h2>
         ${rtext.map((t, k) => `<div class="review">${stars(Math.max(3, Math.round(p.rating - k * 0.4)))}<p>${esc(t)}</p><span class="muted small">${reviewers[(k + p.i) % 5]} · Verified buyer · ${v.year} ${esc(v.model)}</span></div>`).join('')}
       </section>
     </div>`;
     $('#pdAdd').addEventListener('click', () => addToCart(p, +$('#pdQty').value, v));
+    $('#pdAsk').addEventListener('click', () => H.chatAsk && H.chatAsk('fit', { v, p }));
   }
 
   function cartTotals(lines, choices) {
@@ -416,7 +431,7 @@
   function pageCart() {
     renderVehBar();
     if (!cart.length) {
-      app.innerHTML = `${crumbs([['Home', '#/'], ['Cart', '']])}<h1 class="page-h">Your cart</h1><div class="empty big">Your cart is empty.<br><a class="btn btn-primary" href="#/v/${DEMO_GARAGE[0]}/wheel-hub-assembly">Try the Ram 2500 hub demo →</a> <button class="btn" id="demoCart">Load a demo cart</button></div>`;
+      app.innerHTML = `${crumbs([['Home', '#/'], ['Cart', '']])}<h1 class="page-h">Your cart</h1><div class="empty big"><div class="empty-ico">🛒</div><b>Your cart is empty</b><br><span class="small">Not sure where to start? Let us build the whole job for you.</span><br><a class="btn btn-dark" href="#/jobs">✨ Build my job</a> <a class="btn btn-primary" href="#/v/${DEMO_GARAGE[0]}/wheel-hub-assembly">Try the Ram 2500 hub demo →</a> <button class="btn" id="demoCart">Load a demo cart</button></div>`;
       $('#demoCart').onclick = loadDemoCart; return;
     }
     const t = cartTotals(cart);
@@ -427,7 +442,7 @@
         <div class="wh-h"><span class="dot d${Math.min(D.WAREHOUSES[g.wh].d, 4)}"></span><b>Ships from ${esc(D.WAREHOUSES[g.wh].city)}</b><span class="muted">${g.weight} lb · Ground ${D.WAREHOUSES[g.wh].days} · from ${money(shipOptions(g.weight, g.wh)[0].charged)}</span></div>
         ${g.lines.map(l => `<div class="cline">
           <div class="cl-ico">${icon(partIcon(l.subId), 34)}</div>
-          <div class="cl-t"><a href="#/p/${l.vid}/${l.subId}/${l.i}"><b>${esc(l.brand)} ${esc(l.partNo)}</b></a><span>${esc(l.name)}${l.pos ? ' · ' + esc(l.pos) : ''}</span><span class="muted small">${esc(l.vlabel)}</span>${tierPill(l.tier)}</div>
+          <div class="cl-t">${l.extra ? `<b>${esc(l.name)}</b><span class="muted small">Job kit add-on · ${esc(l.vlabel)}</span>` : `<a href="#/p/${l.vid}/${l.subId}/${l.i}"><b>${esc(l.brand)} ${esc(l.partNo)}</b></a><span>${esc(l.name)}${l.pos ? ' · ' + esc(l.pos) : ''}</span><span class="small fit-txt">✓ Fits ${esc(l.vlabel)}</span>${tierPill(l.tier)}`}</div>
           <div class="cl-q"><button data-dq="${l.key}" aria-label="Decrease">−</button><span>${l.qty}</span><button data-iq="${l.key}" aria-label="Increase">+</button></div>
           <div class="cl-p"><b>${money(l.price * l.qty)}</b>${l.core ? `<span class="core">+ ${money(l.core * l.qty)} core</span>` : ''}<button class="linkbtn small" data-rm="${l.key}">Remove</button></div>
         </div>`).join('')}</div>`).join('')}</div>
@@ -438,8 +453,10 @@
         <div class="sum"><span>Shipping (Ground, ${t.groups.length} box${t.groups.length > 1 ? 'es' : ''})</span><b>${money(t.ship)}</b></div>
         <div class="sum"><span>Est. tax</span><b>${money(t.tax)}</b></div>
         <div class="sum total"><span>Total</span><b>${money(t.total)}</b></div>
-        <a class="btn btn-primary btn-lg btn-block" href="#/checkout">Checkout →</a>
+        <a class="btn btn-primary btn-lg btn-block" href="#/checkout">🔒 Secure checkout →</a>
         <p class="tiny muted">Faster shipping options available at checkout.</p>
+        <div class="cart-fit">${FIT_BADGE}<p class="tiny muted">Every part in this cart is checked against your garage vehicle. If it doesn't fit, we email a prepaid return label.</p></div>
+        ${H.payIcons ? H.payIcons() : ''}
       </aside>
     </div>`;
     const find = k => cart.find(l => l.key === k);
@@ -465,12 +482,14 @@
     render();
   }
 
-  let shipChoices = {};
+  let shipChoices = {}; let bizMode = false; let poNum = '';
   function pageCheckout() {
     renderVehBar();
     if (!cart.length) { location.hash = '#/cart'; return; }
+    if (/biz=1/.test(location.hash)) bizMode = true;
     const draw = () => {
       const t = cartTotals(cart, shipChoices);
+      const bizDisc = bizMode ? +(t.sub * D.FLEET_CO.discount).toFixed(2) : 0;
       app.innerHTML = `${crumbs([['Home', '#/'], ['Cart', '#/cart'], ['Checkout', '']])}<h1 class="page-h">Checkout</h1>
       <div class="co">
         <div class="co-main">
@@ -488,8 +507,11 @@
             </div>`).join('')}
           </section>
           <section class="panel"><h2><span class="step">3</span>Payment</h2>
-            <div class="paytabs"><span class="on">Card</span><span>PayPal</span><span>Apple Pay</span></div>
-            <div class="form2"><label class="span2">Card number<input value="4242 4242 4242 4242" inputmode="numeric"></label><label class="half">Expiry<input value="08 / 29"></label><label class="half">CVC<input value="123"></label></div>
+            <label class="ck biz-ck"><input type="checkbox" id="bizAcct" ${bizMode ? 'checked' : ''}> <span>Bill to my shop account <span class="tier-pill t-better">${esc(D.FLEET_CO.terms)}</span><br><span class="muted small">${esc(D.FLEET_CO.name)} · ${esc(D.FLEET_CO.acct)}</span></span></label>
+            ${bizMode ? `<div class="form2 biz-f"><label>Purchase order #<input id="poNum" value="${esc(poNum)}" placeholder="e.g. PO-88412"></label><label>Unit / job reference<input value="U-104 · front end"></label><label class="span2">Approver<select><option>Kyle Bauer, Shop foreman (up to $2,500)</option><option>Dana Hostetler, Owner</option></select></label></div><p class="small muted">Invoice goes on your ${esc(D.FLEET_CO.terms)} statement. ${esc(D.FLEET_CO.tier)} pricing (−${Math.round(D.FLEET_CO.discount * 100)}%) applied.</p>` : `
+            <div class="paytabs"><span class="on">Card</span><span>PayPal</span><span>Apple Pay</span><span>Affirm</span></div>
+            <div class="form2"><label class="span2">Card number<input value="4242 4242 4242 4242" inputmode="numeric"></label><label class="half">Expiry<input value="08 / 29"></label><label class="half">CVC<input value="123"></label></div>`}
+            ${H.payIcons ? H.payIcons() : ''}
           </section>
         </div>
         <aside class="co-side panel">
@@ -500,19 +522,27 @@
           ${t.core ? `<div class="sum"><span>Core charges <small>(refundable)</small></span><b>${money(t.core)}</b></div>` : ''}
           ${t.groups.map((g, gi) => `<div class="sum sub"><span>Ship box ${gi + 1} · ${esc(D.WAREHOUSES[g.wh].city)} (${g.opt.name})</span><b>${money(g.opt.charged)}</b></div>`).join('')}
           <div class="sum"><span>Shipping total</span><b>${money(t.ship)}</b></div>
+          ${bizMode ? `<div class="sum disc"><span>${esc(D.FLEET_CO.tier)} pricing (−${Math.round(D.FLEET_CO.discount * 100)}%)</span><b>${money(-bizDisc)}</b></div>` : ''}
           <div class="sum"><span>Est. tax (7.25%)</span><b>${money(t.tax)}</b></div>
-          <div class="sum total"><span>Total</span><b>${money(t.total)}</b></div>
-          <button class="btn btn-primary btn-lg btn-block" id="placeOrder">Place order · ${money(t.total)}</button>
+          <div class="sum total"><span>Total</span><b>${money(t.total - bizDisc)}</b></div>
+          <button class="btn btn-primary btn-lg btn-block" id="placeOrder">${bizMode ? 'Submit PO order' : 'Place order'} · ${money(t.total - bizDisc)}</button>
+          <div class="cart-fit">${FIT_BADGE}</div>
           <p class="tiny muted">Prototype — no payment is taken.</p>
         </aside>
       </div>`;
       $$('.shipopts input').forEach(r => r.addEventListener('change', () => { shipChoices[r.dataset.wh] = r.value; draw(); }));
+      $('#bizAcct').addEventListener('change', e => { bizMode = e.target.checked; draw(); });
+      if ($('#poNum')) $('#poNum').addEventListener('input', e => { poNum = e.target.value; e.target.classList.remove('bad'); });
       $('#placeOrder').addEventListener('click', () => {
-        const id = 'PR' + Math.floor(100000 + Math.random() * 899999);
-        const order = { id, date: new Date().toISOString(), lines: cart.slice(), choices: Object.assign({}, shipChoices) };
-        const orders = store.get('orders', []); orders.unshift(order); store.set('orders', orders.slice(0, 10));
-        cart = []; saveCart(); shipChoices = {};
-        location.hash = '#/order/' + id;
+        if (bizMode && !poNum.trim()) { $('#poNum').classList.add('bad'); $('#poNum').focus(); return toast('Enter a purchase order number for shop billing', 'err'); }
+        const btn = $('#placeOrder'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Placing order…';
+        setTimeout(() => {
+          const id = 'JX' + Math.floor(100000 + Math.random() * 899999);
+          const order = { id, date: new Date().toISOString(), lines: cart.slice(), choices: Object.assign({}, shipChoices), po: bizMode ? poNum : null };
+          const orders = store.get('orders', []); orders.unshift(order); store.set('orders', orders.slice(0, 10));
+          cart = []; saveCart(); shipChoices = {};
+          location.hash = '#/order/' + id;
+        }, 900);
       });
     };
     draw();
@@ -525,8 +555,9 @@
     const t = cartTotals(o.lines, o.choices);
     app.innerHTML = `<div class="panel confirm"><div class="big-check">✓</div><h1>Order ${esc(o.id)} placed</h1>
       <p>${t.groups.length} box${t.groups.length > 1 ? 'es' : ''} shipping from ${t.groups.map(g => D.WAREHOUSES[g.wh].city).join(', ')}. Total <b>${money(t.total)}</b>.</p>
-      <p class="muted small">You'll get a separate tracking number for each warehouse.</p>
-      <div class="confirm-cta"><a class="btn" href="#/">Keep shopping</a><a class="btn btn-dark" href="#/admin/${esc(o.id)}">Internal: see margin on this order →</a></div></div>`;
+      ${o.po ? `<p>Billed to shop account · PO <b>${esc(o.po)}</b></p>` : ''}<p class="muted small">You'll get a separate tracking number for each warehouse. Questions? Our 24/7 assistant already knows this order.</p>
+      <div class="confirm-cta"><a class="btn" href="#/">Keep shopping</a><button class="btn" id="trackBtn">💬 Track this order</button><a class="btn btn-dark" href="#/admin/${esc(o.id)}">Internal: see margin on this order →</a></div></div>`;
+    $('#trackBtn').onclick = () => H.chatAsk && H.chatAsk('order');
   }
 
   // ---------- admin / margin mock ----------
@@ -617,7 +648,7 @@
       ${!subs.length && !results.length ? `<div class="empty">No matches. Try “hub”, “filter”, or a part number like <code>${esc(D.partsFor(D.findVehicle(DEMO_GARAGE[0]), 'wheel-hub-assembly')[0].partNo)}</code>.</div>` : ''}`;
   }
 
-  function notFound() { app.innerHTML = '<div class="empty big">Page not found. <a href="#/">Go home</a></div>'; }
+  function notFound() { app.innerHTML = '<div class="empty big"><div class="empty-ico">🧭</div><b>We couldn\'t find that page</b><br><a class="btn btn-primary" href="#/">Back to the store</a></div>'; }
 
   // ---------- modal ----------
   function openModal(html) {
@@ -648,7 +679,10 @@
     else if (parts[0] === 'order') pageOrder(parts[1]);
     else if (parts[0] === 'admin') pageAdmin(parts[1]);
     else if (parts[0] === 'search') pageSearch(q);
+    else if (H.routes[parts[0]]) H.routes[parts[0]](parts, q);
     else notFound();
+    $$('.mainnav a').forEach(a => a.classList.toggle('on', a.dataset.nav === (parts[0] || 'home')));
+    if (H.afterRender) H.afterRender(parts);
     renderVehBar();
     window.scrollTo(0, 0);
   }
@@ -657,7 +691,16 @@
   window.addEventListener('hashchange', render);
   // expose for screenshot harness
   window.PR = { loadDemoCart: () => { loadDemoCart(); } };
-  if (/demo=cart/.test(location.search) && !cart.length) loadDemoCart();
-  updateCartCount();
-  render();
+  // shared context for js/features.js (loaded after this file, before first render)
+  Object.assign(H, {
+    D, $, $$, app, money, esc, store, toast, crumbs, stars, tierPill, openModal, closeModal, render, renderVehBar, FIT_BADGE,
+    selectorHtml, wireSelector, setVehicle, currentVid, addToCart, saveCart, updateCartCount, cartTotals, groupByWh, DEMO_GARAGE,
+    getGarage: () => garage, getCart: () => cart, setCart: c => { cart = c; saveCart(); }, getOrders: () => store.get('orders', []), sampleOrder
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (H.init) H.init();
+    if (/demo=cart/.test(location.search) && !cart.length) loadDemoCart();
+    updateCartCount();
+    render();
+  });
 })();
