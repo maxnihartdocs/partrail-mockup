@@ -4,47 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b1f24">
-<title>PartRail — Every part. Every brand. Good · Better · Best.</title>
+<title>Auto & diesel parts: Good · Better · Best</title>
+<meta name="description" content="Warehouse-direct auto and diesel truck parts. Every part, every brand, priced Good · Better · Best. Prototype with fake data.">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b1f24'/%3E%3Cpath d='M8 22h16M8 16h16M8 10h16' stroke='%23f26a1b' stroke-width='3'/%3E%3C/svg%3E">
 </head>
 <body>
 <div class="proto-banner">Prototype · fake data · no real orders</div>
+<div class="utilbar">
+  <div class="wrap utilbar-in">
+    <div class="ub-rot"><span>🚚 <b>Free ground shipping</b> on orders $99+ per warehouse</span><span class="ub-hide">🛡 Fits-or-we-pay-the-return guarantee</span><span class="ub-hide">↩︎ 60-day returns · prepaid core labels</span></div>
+    <div class="ub-r"><a href="#/pro">Shops & Fleets</a><a href="#/track" id="ubTrack">Track order</a><a href="#/guides">Guides</a><span class="ub-ph">📞 <span data-store="support"></span></span></div>
+  </div>
+</div>
 <header class="topbar">
   <div class="wrap topbar-in">
-    <a class="logo" href="#/" aria-label="PartRail home">
-      <span class="logo-mark"><i></i><i></i><i></i></span>
-      <span class="logo-word">Part<b>Rail</b></span>
-    </a>
+    <a class="logo" href="#/" data-logo aria-label="Home"></a>
     <form class="search" id="searchForm" role="search">
       <input id="searchInput" type="search" placeholder="Part # or part name (e.g. wheel hub)" autocomplete="off" aria-label="Search parts">
       <button type="submit" aria-label="Search">Search</button>
     </form>
     <nav class="top-actions">
+      <a href="#/pro/dashboard" class="ta"><span class="ta-ico">👤</span><span class="ta-l">Account</span></a>
       <a href="#/garage" class="ta" id="garageBtn"><span class="ta-ico">🚚</span><span class="ta-l">Garage</span></a>
       <a href="#/cart" class="ta cart-link"><span class="ta-ico">🛒</span><span class="ta-l">Cart</span><span class="badge" id="cartCount">0</span></a>
     </nav>
   </div>
+  <nav class="mainnav"><div class="wrap mainnav-in">
+    <a href="#/" data-nav="home">Shop parts</a>
+    <a href="#/jobs" data-nav="jobs" class="mn-ai">✨ Build my job</a>
+    <a href="#/garage" data-nav="garage">My Garage</a>
+    <a href="#/guides" data-nav="guides">Repair guides</a>
+    <a href="#/pro" data-nav="pro">Shops & Fleets</a>
+    <a href="#/deals" data-nav="deals" class="mn-deal">Closeouts</a>
+  </div></nav>
   <div class="vehbar" id="vehBar"></div>
 </header>
 <main id="app" class="wrap"></main>
+<section class="trustband"><div class="wrap trust-in">
+  <div><b>🔒 256-bit SSL</b><span>Secure checkout</span></div>
+  <div><b>🛡 Fitment guarantee</b><span>Fits or we pay the return</span></div>
+  <div><b>⭐ 4.8 / 5</b><span>21,486 verified reviews</span></div>
+  <div><b>🏭 6 warehouses</b><span>Most orders ship same day</span></div>
+</div></section>
 <footer class="footer">
-  <div class="wrap footer-in">
-    <div>
-      <div class="logo logo-sm"><span class="logo-mark"><i></i><i></i><i></i></span><span class="logo-word">Part<b>Rail</b></span></div>
-      <p class="muted">Every part. Every brand. Priced Good · Better · Best.<br>A Doc's Diesel company · Bryan, Ohio</p>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="f-brand">
+        <div class="logo logo-sm" data-logo></div>
+        <p class="muted"><span data-store="tagline"></span><br><span data-store="parent"></span></p>
+        <form class="news" id="newsForm"><input type="email" placeholder="Email for closeout alerts" aria-label="Email" required><button class="btn btn-primary btn-sm">Subscribe</button></form>
+        <p class="tiny muted">Weekly closeouts & wholesaler deals. Unsubscribe anytime.</p>
+      </div>
+      <div class="f-col"><h4>Shop</h4><a href="#/">Catalog</a><a href="#/jobs">Build my job</a><a href="#/garage">My Garage</a><a href="#/deals">Closeouts</a></div>
+      <div class="f-col"><h4>Help</h4><a href="#/track">Track an order</a><a href="#" data-chat="return">Returns & cores</a><a href="#" data-chat="fit">Fitment help</a><a href="#" data-chat="hi">Chat 24/7</a></div>
+      <div class="f-col"><h4>Pro</h4><a href="#/pro">Shops & Fleets</a><a href="#/pro/dashboard">Fleet dashboard</a><a href="#/pro/apply">Apply for Net 30</a><a href="#/admin">Admin (internal mock)</a></div>
+      <div class="f-col"><h4>Learn</h4><a href="#/guides">Repair guides</a><a href="#/guide/2019_ram_2500_6-7l-l6-cummins-diesel-turbo__wheel-hub-assembly">Ram 2500 hub guide</a><a href="#/guides">Good vs Better vs Best</a></div>
     </div>
-    <div class="footer-links">
-      <a href="#/">Catalog</a><a href="#/garage">My Garage</a><a href="#/cart">Cart</a><a href="#/admin">Admin (internal mock)</a>
+    <div class="footer-bot">
+      <div id="footPay"></div>
+      <p class="tiny muted">© 2026 <span data-store="name"></span> (prototype). Prototype for internal review. All brands, part numbers, prices, reviews, vehicles, and customers are fictitious. Payment logos are placeholders.</p>
     </div>
-    <p class="tiny muted">Prototype for internal review. All brands, part numbers, prices, and reviews are fictitious.</p>
   </div>
 </footer>
+<div id="chatRoot"></div>
 <div id="compareBar" class="comparebar" hidden></div>
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" hidden></div>
 <script src="js/data.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/app.js"></script>
+<script src="js/features.js"></script>
 </body>
 </html>
