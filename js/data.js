@@ -1,4 +1,4 @@
-/* PartRail prototype — ALL DATA IS FAKE. No real brands, prices, or part numbers. */
+/* Jax Auto Parts prototype — ALL DATA IS FAKE. No real brands, prices, or part numbers. */
 (function () {
   'use strict';
 
@@ -260,8 +260,78 @@
     }[tier];
   }
 
+  // ---------- store identity (swap the name here only) ----------
+  const STORE = {
+    name: 'Jax Auto Parts',      // full display name
+    nameA: 'Jax', nameB: 'Auto Parts', // logo split: plain + accent half
+    tagline: 'Every part. Every brand. Good · Better · Best.',
+    support: '1-800-555-0199',
+    parent: "A Doc's Diesel company · Bryan, Ohio"
+  };
+
+  // ---------- VIN / plate mock decode ----------
+  const VIN_DECODE = { vid: vid(2019, 'Ram', '2500', '6.7L L6 Cummins Diesel Turbo'), trim: 'Laramie Crew Cab 4x4, 6\'4" box', engine: '6.7L I6 Cummins Turbo Diesel (HO 400 hp / 1,000 lb-ft)', drive: '4WD · 6-spd Aisin AS69RC auto', gvwr: '10,000 lb (Class 2b)', plant: 'Saltillo, MX', axle: '3.73 rear, 11.5" AAM' };
+  const PLATE_DECODE = { vid: vid(2018, 'Ford', 'F-250 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'), trim: 'Lariat SuperCrew 4x4, 6\'9" box', engine: '6.7L V8 Power Stroke Turbo Diesel', drive: '4WD · 6R140 TorqShift 6-spd', gvwr: '10,000 lb (Class 2b)', vin: '1FT7W2BT•JE••4821' };
+  const STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
+
+  // ---------- job kits ("Build my job") ----------
+  // each item: [subId, qty, role, pos?]   role: req | together | hw | tool
+  const JOBS = [
+    { id: 'front-brakes', name: 'Front brake job', icon: 'disc', diff: 2, time: '1.5–2 hr', blurb: 'Pads, rotors and hardware for both front wheels.',
+      items: [['brake-pad', 1, 'req', 'Front'], ['brake-rotor', 2, 'req', 'Front'], ['brake-caliper', 1, 'together', 'Front Left'], ['brake-caliper', 1, 'together', 'Front Right'], ['brake-hydraulic-hose', 2, 'together', 'Front']],
+      extras: [['hw', 'Brake hardware & clip kit', 14.99], ['hw', 'DOT 4 brake fluid, 32 oz', 12.49], ['hw', 'Brake cleaner, 2-pack', 9.98], ['tool', 'Caliper piston compressor', 24.99], ['tool', 'Torque wrench, 1/2" 25–250 ft-lb', 59.99]] },
+    { id: 'front-hubs', name: 'Front hub replacement (both sides)', icon: 'hub', diff: 3, time: '2.5–3.5 hr', blurb: 'Both front wheel hub assemblies plus everything that comes off with them.',
+      items: [['wheel-hub-assembly', 2, 'req', 'Front'], ['abs-wheel-speed-sensor', 2, 'together', 'Front'], ['brake-pad', 1, 'together', 'Front'], ['universal-joint', 2, 'together']],
+      extras: [['hw', 'Hub bolt set (8), grade 10.9', 21.99], ['hw', 'Axle nut, 36 mm, 2-pack', 18.49], ['hw', 'Anti-seize compound, 8 oz', 8.99], ['tool', 'Axle nut socket, 36 mm 12-pt', 16.99], ['tool', 'Hub puller / slide hammer', 64.99]] },
+    { id: 'glow-plugs', name: 'Glow plug service', icon: 'bolt', diff: 3, time: '2–4 hr', blurb: 'Full set of glow plugs with the gaskets that should never be reused.', diesel: true,
+      items: [['glow-plug', 6, 'req'], ['valve-cover-gasket', 1, 'together'], ['intake-air-temp-sensor', 1, 'together']],
+      extras: [['hw', 'Glow plug harness connector (2)', 22.99], ['hw', 'Dielectric grease, 3 oz', 6.49], ['tool', 'Glow plug socket, 9 mm thin-wall', 14.99], ['tool', 'Glow plug tap/reamer kit', 49.99]] },
+    { id: 'oil-change', name: 'Oil change + filters', icon: 'filter', diff: 1, time: '45 min', blurb: 'Oil, oil filter, fuel filters and air filter — the full service.',
+      items: [['oil-filter', 1, 'req'], ['fuel-filter', 1, 'req'], ['air-filter', 1, 'together'], ['cabin-air-filter', 1, 'together']],
+      extras: [['hw', '15W-40 CK-4 diesel oil, 12 qt', 64.99], ['hw', 'Drain plug washer, 5-pack', 4.99], ['tool', 'Cap-style filter wrench', 12.99], ['tool', '20 qt drain pan', 18.99]] },
+    { id: 'front-end', name: 'Front end rebuild (steering)', icon: 'spring', diff: 4, time: '4–6 hr', blurb: 'Ball joints, tie rods, track bar and stabilizer — the death-wobble fix.',
+      items: [['ball-joint', 2, 'req', 'Front Lower'], ['tie-rod-end', 2, 'req', 'Outer'], ['track-bar', 1, 'req'], ['steering-stabilizer', 1, 'together'], ['sway-bar-link', 2, 'together', 'Front']],
+      extras: [['hw', 'Cotter pin & castle nut kit', 9.99], ['hw', 'Marine grease, 14 oz', 7.99], ['tool', 'Ball joint press kit (rental-grade)', 89.99], ['tool', 'Pickle fork / tie rod separator', 19.99]] }
+  ];
+  // free-text problem → likely causes → jobs
+  const SYMPTOMS = [
+    { re: /clunk|knock|pop|wobble|turn|steer|loose|wander/i, causes: [['Worn lower ball joints', 62, 'front-end'], ['Loose track bar bushing', 24, 'front-end'], ['Failing front wheel hub bearing', 14, 'front-hubs']] },
+    { re: /grind|squeal|squeak|brak|stop|pedal|vibrat/i, causes: [['Pads worn to backing plate', 58, 'front-brakes'], ['Warped / thin rotors', 30, 'front-brakes'], ['Seized caliper slide', 12, 'front-brakes']] },
+    { re: /hum|growl|roar|bearing|abs|speed|wheel noise/i, causes: [['Front hub bearing failing', 71, 'front-hubs'], ['ABS tone ring / sensor fault', 19, 'front-hubs'], ['Cupped tires', 10, null]] },
+    { re: /start|cold|crank|smoke|white smoke|glow|winter/i, causes: [['One or more glow plugs open', 55, 'glow-plugs'], ['Glow plug relay / grid heater', 25, 'glow-plugs'], ['Water in fuel / clogged fuel filter', 20, 'oil-change']] },
+    { re: /power|stall|fuel|filter|light|service|oil|miles/i, causes: [['Restricted fuel filter', 48, 'oil-change'], ['Overdue oil & filter service', 37, 'oil-change'], ['Dirty air filter', 15, 'oil-change']] }
+  ];
+
+  // ---------- fleet / shop account (fake) ----------
+  const FLEET_CO = { name: 'Black Swamp Hauling & Excavating', acct: 'SHP-20417', tier: 'Shop Pro', discount: 0.12, terms: 'Net 30', limit: 25000, balance: 6842.17, since: 2023 };
+  const FLEET = (function () {
+    const r = rng('fleet'); const out = [];
+    const models = [[2019, 'Ram', '2500', '6.7L L6 Cummins Diesel Turbo'], [2018, 'Ford', 'F-250 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'], [2020, 'Chevrolet', 'Silverado 2500 HD', '6.6L V8 Duramax Diesel Turbo'], [2021, 'Ram', '3500', '6.7L L6 Cummins Diesel Turbo'], [2017, 'Ford', 'F-350 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'], [2022, 'GMC', 'Sierra 2500 HD', '6.6L V8 Duramax Diesel Turbo']];
+    const drivers = ['T. Ruiz', 'K. Bauer', 'D. Miller', 'S. Okafor', 'J. Lehman', 'R. Fry', 'A. Schaffer', 'M. Diaz', 'B. Kline', 'C. Yoder', 'P. Graber', 'L. Weaver'];
+    const chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+    for (let k = 0; k < 12; k++) {
+      const m = models[k % models.length]; const pre = { Ram: '3C6UR5', Ford: '1FT7W2', Chevrolet: '1GC4YN', GMC: '1GT49R' }[m[1]];
+      let tail = ''; for (let j = 0; j < 11; j++) tail += chars[Math.floor(r() * chars.length)];
+      const miles = Math.round(48000 + r() * 210000);
+      out.push({ unit: 'U-' + String(101 + k), vid: vid(m[0], m[1], m[2], m[3]), vin: pre + tail, miles, driver: drivers[k], status: miles > 200000 ? 'Due: front end' : r() < 0.3 ? 'Due: oil service' : 'OK' });
+    }
+    return out;
+  })();
+  const FLEET_USERS = [['Dana Hostetler', 'Owner / admin', 'All permissions'], ['Kyle Bauer', 'Shop foreman', 'Order · approve up to $2,500'], ['Tomas Ruiz', 'Technician', 'Order with PO · needs approval'], ['Ashley Graber', 'Accounts payable', 'Invoices & statements only']];
+  const FLEET_SPEND = [['May', 3120], ['Jun', 4480], ['Jul', 3905], ['Aug', 5260], ['Sep', 4710], ['Oct', 1985]];
+
+  // ---------- SEO guides (programmatic vehicle × part pages) ----------
+  const GUIDE_VEHICLES = [
+    [2019, 'Ram', '2500', '6.7L L6 Cummins Diesel Turbo'], [2018, 'Ford', 'F-250 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'], [2020, 'Chevrolet', 'Silverado 2500 HD', '6.6L V8 Duramax Diesel Turbo'],
+    [2021, 'Ram', '3500', '6.7L L6 Cummins Diesel Turbo'], [2017, 'Ford', 'F-350 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'], [2022, 'GMC', 'Sierra 2500 HD', '6.6L V8 Duramax Diesel Turbo'],
+    [2016, 'Ram', '2500', '6.7L L6 Cummins Diesel Turbo'], [2015, 'Ford', 'F-250 Super Duty', '6.7L V8 Power Stroke Diesel Turbo'], [2019, 'Ford', 'F-150', '3.5L V6 EcoBoost Turbo'], [2020, 'Toyota', 'Tacoma', '3.5L V6']
+  ];
+  const GUIDE_PARTS = ['wheel-hub-assembly', 'brake-pad', 'brake-rotor', 'ball-joint', 'fuel-filter', 'alternator', 'water-pump', 'glow-plug', 'shock-absorber', 'starter'];
+  function guideSlug(v, subId) { return v.id + '__' + subId; }
+
   window.DATA = {
     YEARS, MAKES, makesFor, modelsFor, enginesFor, vid, findVehicle, vehicleLabel,
-    BRANDS, TIERS, WAREHOUSES, CATALOG, subsFor, findSub, partsFor, findPart, tierMaterials, rng, slug
+    BRANDS, TIERS, WAREHOUSES, CATALOG, subsFor, findSub, partsFor, findPart, tierMaterials, rng, slug,
+    STORE, VIN_DECODE, PLATE_DECODE, STATES, JOBS, SYMPTOMS, FLEET_CO, FLEET, FLEET_USERS, FLEET_SPEND, GUIDE_VEHICLES, GUIDE_PARTS, guideSlug
   };
 })();
